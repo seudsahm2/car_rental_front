@@ -1,3 +1,4 @@
+
 .App {
   text-align: center;
   font-family: Arial, sans-serif;
@@ -23,4 +24,10 @@ li {
   padding: 10px;
   margin: 5px 0;
   border-radius: 5px;
+}
+
+/* src/App.css */
+.App img {
+  max-width: 300px;
+  border-radius: 10px;
 }
