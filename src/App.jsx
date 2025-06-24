@@ -29,14 +29,13 @@ function App() {
     <div className="App">
       {/* AdSense Header Banner */}
       <div style={{ textAlign: 'center', margin: '20px 0' }}>
-        <ins
-          className="adsbygoogle"
-          style={{ display: 'block' }}
-          data-ad-client="ca-pub-1234567890123456"
-          data-ad-slot="1234567890"
+      <ins class="adsbygoogle"
+          style="display:block"
+          data-ad-client="ca-pub-5061735490844182"
+          data-ad-slot="9765584423"
           data-ad-format="auto"
-          data-full-width-responsive="true"
-        ></ins>
+          data-full-width-responsive="true">
+      </ins>
       </div>
 
       {/* Page Content */}
