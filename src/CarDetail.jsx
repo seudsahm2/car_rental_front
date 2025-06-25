@@ -11,40 +11,52 @@ function CarDetail({ apiUrl }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    console.log(`Fetching car with slug: ${slug}`);
-    console.log(`API URL: ${apiUrl}${slug}/`);
-
-    fetch(`${apiUrl}${slug}/`)
-      .then(response => {
+    const fetchCar = async () => {
+      const url = `${apiUrl}${slug}/`;
+      console.log(`Fetching car with slug: ${slug}`);
+      console.log(`API URL: ${url}`);
+      try {
+        const response = await fetch(url);
         if (!response.ok) {
-          throw new Error(`Failed to fetch car: ${response.statusText} (Status: ${response.status})`);
+          const text = await response.text();
+          throw new Error(`Failed to fetch car: ${response.statusText} (Status: ${response.status})\nFull Response:\n${text}`);
         }
-        return response.json();
-      })
-      .then(data => {
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          const text = await response.text();
+          throw new Error(`Expected JSON, got ${contentType}\nFull Response:\n${text}`);
+        }
+        const data = await response.json();
         setCar(data);
-      })
-      .catch(error => {
+      } catch (error) {
         console.error('Fetch car error:', error.message);
         setError(error.message);
-      });
+      }
+    };
 
-    fetch(`${apiUrl.replace('/cars/', '/locations/')}`)
-      .then(response => {
+    const fetchLocations = async () => {
+      const url = `${apiUrl.replace('/cars/', '/locations/')}`;
+      console.log(`Fetching locations from: ${url}`);
+      try {
+        const response = await fetch(url);
         if (!response.ok) {
-          throw new Error(`Failed to fetch locations: ${response.statusText}`);
+          const text = await response.text();
+          throw new Error(`Failed to fetch locations: ${response.statusText} (Status: ${response.status})\nFull Response:\n${text}`);
         }
-        return response.json();
-      })
-      .then(data => {
-        setLocations(data);
-        setIsLoading(false);
-      })
-      .catch(error => {
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          const text = await response.text();
+          throw new Error(`Expected JSON, got ${contentType}\nFull Response:\n${text}`);
+        }
+        const data = await response.json();
+        setLocations(Array.isArray(data) ? data : []);
+      } catch (error) {
         console.error('Fetch locations error:', error);
         setError(error.message);
-        setIsLoading(false);
-      });
+      }
+    };
+
+    Promise.all([fetchCar(), fetchLocations()]).finally(() => setIsLoading(false));
   }, [apiUrl, slug]);
 
   if (isLoading) return <p>Loading car details...</p>;
@@ -95,17 +107,25 @@ function CarDetail({ apiUrl }) {
         <div>
           <label>Pick-up Location:</label>
           <select>
-            {locations.map(location => (
-              <option key={location.id} value={location.id}>{location.name}</option>
-            ))}
+            {locations.length > 0 ? (
+              locations.map(location => (
+                <option key={location.id} value={location.id}>{location.name}</option>
+              ))
+            ) : (
+              <option value="">No locations available</option>
+            )}
           </select>
         </div>
         <div>
           <label>Drop-off Location:</label>
           <select>
-            {locations.map(location => (
-              <option key={location.id} value={location.id}>{location.name}</option>
-            ))}
+            {locations.length > 0 ? (
+              locations.map(location => (
+                <option key={location.id} value={location.id}>{location.name}</option>
+              ))
+            ) : (
+              <option value="">No locations available</option>
+            )}
           </select>
         </div>
         <div>
@@ -120,18 +140,22 @@ function CarDetail({ apiUrl }) {
       </form>
       <h3>Related Cars</h3>
       <ul style={{ listStyleType: 'none', padding: 0 }}>
-        {car.related_cars && car.related_cars.map(related => (
-          <li key={related.id} style={{ margin: '10px 0' }}>
-            <Link to={`/cars/${related.slug}`}>
-              <img
-                src={related.image_url || placeholderImage}
-                alt={`${related.make} ${related.model}`}
-                style={{ maxWidth: '100px', borderRadius: '5px' }}
-              />
-              <p>{related.make} {related.model} (AED {related.daily_rate}/day)</p>
-            </Link>
-          </li>
-        ))}
+        {car.related_cars && car.related_cars.length > 0 ? (
+          car.related_cars.map(related => (
+            <li key={related.id} style={{ margin: '10px 0' }}>
+              <Link to={`/cars/${related.slug}`}>
+                <img
+                  src={related.image_url || placeholderImage}
+                  alt={`${related.make} ${related.model}`}
+                  style={{ maxWidth: '100px', borderRadius: '5px' }}
+                />
+                <p>{related.make} {related.model} (AED {related.daily_rate}/day)</p>
+              </Link>
+            </li>
+          ))
+        ) : (
+          <p>No related cars available</p>
+        )}
       </ul>
     </div>
   );
