@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react';
+import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 import './App.css';
 import AdBanner from './AdBanner';
-import placeholderImage from './assets/Placeholder.svg'; // Import custom placeholder
+import CarDetail from './CarDetail';
+import placeholderImage from './assets/Placeholder.svg';
 
 function App() {
   const [cars, setCars] = useState([]);
   const [error, setError] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   const apiUrl = import.meta.env.VITE_API_URL || 'https://car-rental-pi48.onrender.com/api/cars/';
 
@@ -18,8 +21,7 @@ function App() {
       .then(data => {
         let carData = Array.isArray(data.results) ? data.results : Array.isArray(data) ? data : [];
         setCars(carData);
-        // Log image URLs for debugging
-        console.log('API Response:', JSON.stringify(data, null, 2));
+        setIsLoading(false);
         console.log('Car Image URLs:', carData.map(car => ({
           id: car.id,
           make: car.make,
@@ -33,49 +35,67 @@ function App() {
       .catch(error => {
         console.error('Fetch error:', error);
         setError(error.message);
+        setIsLoading(false);
       });
   }, []);
 
   return (
-    <div className="App">
-      <h1>Premium Crystal Car Rental</h1>
-      <div style={{ margin: '20px auto', textAlign: 'center' }}>
-        <AdBanner />
+    <BrowserRouter>
+      <div className="App">
+        <h1>Premium Crystal Car Rental</h1>
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <>
+                {isLoading ? (
+                  <p>Loading cars...</p>
+                ) : error ? (
+                  <p style={{ color: 'red' }}>Error: {error}</p>
+                ) : (
+                  <>
+                    <div style={{ margin: '20px auto', textAlign: 'center' }}>
+                      <AdBanner shouldRender={cars.length > 0} />
+                    </div>
+                    <h2>Available Cars</h2>
+                    <ul style={{ listStyleType: 'none', padding: 0 }}>
+                      {cars.map(car => (
+                        <li key={car.id} style={{ margin: '10px 0', borderBottom: '1px solid #ccc', paddingBottom: '10px' }}>
+                          <Link to={`/cars/${car.slug}`}>
+                            {car.image_url ? (
+                              <img
+                                src={car.image_url}
+                                alt={`${car.make} ${car.model}`}
+                                style={{ maxWidth: '300px', borderRadius: '10px' }}
+                                onError={(e) => {
+                                  console.error(`Failed to load image for ${car.make} ${car.model}: ${car.image_url}`);
+                                  e.target.src = placeholderImage;
+                                }}
+                              />
+                            ) : (
+                              <img
+                                src={placeholderImage}
+                                alt="No image available"
+                                style={{ maxWidth: '300px', borderRadius: '10px' }}
+                              />
+                            )}
+                            <h3>{car.make} {car.model} ({car.year})</h3>
+                            <p>Category: {car.category?.name || 'N/A'}</p>
+                            <p>{car.description || 'No description'}</p>
+                            <p><strong>AED {car.daily_rate}/day</strong></p>
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+              </>
+            }
+          />
+          <Route path="/cars/:slug" element={<CarDetail apiUrl={apiUrl} />} />
+        </Routes>
       </div>
-      {error && <p style={{ color: 'red' }}>Error: {error}</p>}
-      <h2>Available Cars</h2>
-      {cars.length === 0 && !error ? (
-        <p>Loading cars...</p>
-      ) : (
-        <ul style={{ listStyleType: 'none', padding: 0 }}>
-          {cars.map(car => (
-            <li key={car.id} style={{ margin: '10px 0', borderBottom: '1px solid #ccc', paddingBottom: '10px' }}>
-              {car.image_url ? (
-                <img
-                  src={car.image_url}
-                  alt={`${car.make} ${car.model}`}
-                  style={{ maxWidth: '300px', borderRadius: '10px' }}
-                  onError={(e) => {
-                    console.error(`Failed to load image for ${car.make} ${car.model}: ${car.image_url}`);
-                    e.target.src = placeholderImage; // Use custom placeholder
-                  }}
-                />
-              ) : (
-                <img
-                  src={placeholderImage}
-                  alt="No image available"
-                  style={{ maxWidth: '300px', borderRadius: '10px' }}
-                />
-              )}
-              <h3>{car.make} {car.model} ({car.year})</h3>
-              <p>Category: {car.category?.name || 'N/A'}</p>
-              <p>{car.description || 'No description'}</p>
-              <p><strong>${car.daily_rate}/day</strong></p>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
+    </BrowserRouter>
   );
 }
 
