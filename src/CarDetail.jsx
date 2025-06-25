@@ -11,22 +11,29 @@ function CarDetail({ apiUrl }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    console.log(`Fetching car with slug: ${slug}`);
+    console.log(`API URL: ${apiUrl}${slug}/`);
+
     fetch(`${apiUrl}${slug}/`)
       .then(response => {
-        if (!response.ok) throw new Error(`Failed to fetch car: ${response.statusText}`);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch car: ${response.statusText} (Status: ${response.status})`);
+        }
         return response.json();
       })
       .then(data => {
         setCar(data);
       })
       .catch(error => {
-        console.error('Fetch car error:', error);
+        console.error('Fetch car error:', error.message);
         setError(error.message);
       });
 
     fetch(`${apiUrl.replace('/cars/', '/locations/')}`)
       .then(response => {
-        if (!response.ok) throw new Error(`Failed to fetch locations: ${response.statusText}`);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch locations: ${response.statusText}`);
+        }
         return response.json();
       })
       .then(data => {
@@ -42,7 +49,7 @@ function CarDetail({ apiUrl }) {
 
   if (isLoading) return <p>Loading car details...</p>;
   if (error) return <p style={{ color: 'red' }}>Error: {error}</p>;
-  if (!car) return <p>No car data available</p>;
+  if (!car) return <p>No car data available for slug: {slug}</p>;
 
   return (
     <div style={{ padding: '20px' }}>
@@ -84,34 +91,36 @@ function CarDetail({ apiUrl }) {
         <li>Additional KM Rate: {car.additional_km_rate}</li>
       </ul>
       <h3>Booking Form</h3>
-      <div>
-        <label>Pick-up Location:</label>
-        <select>
-          {locations.map(location => (
-            <option key={location.id} value={location.id}>{location.name}</option>
-          ))}
-        </select>
-      </div>
-      <div>
-        <label>Drop-off Location:</label>
-        <select>
-          {locations.map(location => (
-            <option key={location.id} value={location.id}>{location.name}</option>
-          ))}
-        </select>
-      </div>
-      <div>
-        <label>Pick-up Date:</label>
-        <input type="date" />
-      </div>
-      <div>
-        <label>Drop-off Date:</label>
-        <input type="date" />
-      </div>
-      <button type="button">Book Now</button>
+      <form>
+        <div>
+          <label>Pick-up Location:</label>
+          <select>
+            {locations.map(location => (
+              <option key={location.id} value={location.id}>{location.name}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label>Drop-off Location:</label>
+          <select>
+            {locations.map(location => (
+              <option key={location.id} value={location.id}>{location.name}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label>Pick-up Date:</label>
+          <input type="date" />
+        </div>
+        <div>
+          <label>Drop-off Date:</label>
+          <input type="date" />
+        </div>
+        <button type="submit">Book Now</button>
+      </form>
       <h3>Related Cars</h3>
       <ul style={{ listStyleType: 'none', padding: 0 }}>
-        {car.related_cars.map(related => (
+        {car.related_cars && car.related_cars.map(related => (
           <li key={related.id} style={{ margin: '10px 0' }}>
             <Link to={`/cars/${related.slug}`}>
               <img
